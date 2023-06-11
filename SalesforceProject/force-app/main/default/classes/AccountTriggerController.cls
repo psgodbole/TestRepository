@@ -5,6 +5,7 @@ public with sharing class AccountTriggerController {
         for(Account acc : accList){
             accId.add(acc.Id);
         }
+        // SOQL TO get record with no contact and id = Account Id From trigger.new
         for(Account objAcc :[SELECT Id,Name,Componay_Email__c,Phone,Active__c,Type FROM Account 
                             WHERE ID NOT IN  (SELECT AccountId FROM Contact WHERE LastName LIKE 'Customer Representative')
                             AND ID IN : accId]){
