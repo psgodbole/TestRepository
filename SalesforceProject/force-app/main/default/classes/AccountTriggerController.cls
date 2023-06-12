@@ -1,14 +1,9 @@
 public with sharing class AccountTriggerController {
-  public static void forAccUpdateCreateContact(List<Account> accList,Map<Id,Account> oldMap){
+  public static void forAccUpdateCreateContact(List<Account> accList,Map<Id,Account> oldMap,Map<Id,Account> newMap){
         List<Contact> insertConList = new List<Contact>();
-        SET<Id> accId = new SET<Id>();
-        for(Account acc : accList){
-            accId.add(acc.Id);
-        }
-        // SOQL TO get record with no contact and id = Account Id From trigger.new
-        for(Account objAcc :[SELECT Id,Name,Componay_Email__c,Phone,Active__c,Type FROM Account 
+		for(Account objAcc :[SELECT Id,Name,Componay_Email__c,Phone,Active__c,Type FROM Account 
                             WHERE ID NOT IN  (SELECT AccountId FROM Contact WHERE LastName LIKE 'Customer Representative')
-                            AND ID IN : accId]){
+                            AND ID IN : newMap.keySet()]){
                                 if(objAcc.Type == 'Customer - Direct' || objAcc.Type == 'Customer - Channel'){
                                     if( objAcc.Active__c == true && oldMap !=null && objAcc.Active__c != oldMap.get(objAcc.Id).Active__c){
                                         // This is for update account record
@@ -21,7 +16,7 @@ public with sharing class AccountTriggerController {
                                         insertConList.add(updCon);
                                     } 
                                     // this is for new Account record
-                                    if (objAcc.Active__c == true ){
+                                    if (objAcc.Active__c == true && oldMap == null ){
                                         Contact objCon = new Contact();
                                         objCon.FirstName = objAcc.Name;
                                         objCon.LastName = 'Customer Representative';
@@ -37,6 +32,13 @@ public with sharing class AccountTriggerController {
         if(!insertConList.isEmpty()){
             system.debug('trigger execute inside insert update');
             insert insertConList;
+        }
+    }
+    public static void ifAccActivatedSummryMust(List<Account> accList,Map<Id,Account> oldMap){
+        for(Account eachAcc : accList){
+            if(eachAcc.Active__c == true && eachAcc.Active__c != oldMap.get(eachAcc.Id).Active__c && eachAcc.Account_Activation_Summary__c == null){
+                eachAcc.Account_Activation_Summary__c.addError('While activating account, Account Activation Summary must be filled in');
+            }
         }
     }
 }
